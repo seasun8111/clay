@@ -1,0 +1,1 @@
+{"name":"Clay","tagline":"","body":"clay\r\n====\r\n\r\n0.0.3版\r\n\r\n\r\n硬件：\r\n\r\n  板卡：arduino 2560\r\n  蓝牙串口一对（从口 接PC机）\r\n  超声波测距一个（带温度纠正）\r\n\r\n\r\n原理：\r\n  通过超声波测距。\r\n  把距离通过一对蓝牙串口发到PC机上。\r\n  PC机的RUBY程序判断观众在在指定距离内时，开始播放视频。\r\n  当观众离开范围时，开始播放默认视频。\r\n\r\n\r\n","google":"","note":"Don't delete this file! It's used internally to help with page regeneration."}
