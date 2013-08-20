@@ -23,20 +23,7 @@ class RangerMonitor
 #ruby j:\GitHub\clay\ser.rb
     #开始执行啦…………
     def start
-        @playing = false
-        mySp  = SerialPortReader.new 
-        mySp.readline do |line|
-            #把距离取下绝对值，因为有时会出些负值。
-            aRange = line.to_i.abs
-            #后台打印一下 方便程序猿看
-            # puts aRange              
-            #取距离值
-            avgRange = calulateRange(aRange)
-            #如果距离不是无效的就执行放视频的函数
-            if avgRange != -99
-                playVideo(avgRange)
-            end
-        end
+       puts "sdsdsdsd"
     end
     
     #消除异常值
