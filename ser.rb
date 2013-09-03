@@ -6,28 +6,41 @@ include REXML
 
 class RangerMonitor
 
+    @@iGotIt = 0
+
     @portNum
     @targetRang
     @pingTimes
     @adr
     #程序的初始
-    def initialize(portNum=4, targetRang=150.00)
+    def initialize(portNum=4, targetRang=150.00 ,sonarNo,totalSno)
         puts "开始..."
+        puts "targetRang = #{targetRang}"
+        puts "portNum = #{portNum}"
         @portNum = portNum
         @targetRang = targetRang
         @pingTimes = 10
         @adr = Adr.new
         @rangPipl = []
+        @sonarNo = sonarNo
+        @totalSno = totalSno
     end
-#"COM5", 9600 , 8,1,SerialPort::NONE
-#ruby j:\GitHub\clay\ser.rb
+        #"COM5", 9600 , 8,1,SerialPort::NONE
+        #ruby j:\GitHub\clay\ser.rb
+
     #开始执行啦…………
     def start
         @playing = false
         mySp  = SerialPortReader.new 
+
         mySp.readline do |line|
-            #把距离取下绝对值，因为有时会出些负值。
-            aRange = line.to_i.abs
+            if(line.split("_")[0]==@sonarNo)
+                origValue = line.split("_")[1]
+            else
+                next
+            end
+            #对距离取绝对值，因为有时会出些负值。
+            aRange = origValue.to_i.abs
             #后台打印一下 方便程序猿看
             # puts aRange              
             #取距离值
@@ -37,6 +50,7 @@ class RangerMonitor
                 playVideo(avgRange)
             end
         end
+        puts "结束执行啦…………"
     end
     
     #消除异常值
@@ -62,7 +76,7 @@ class RangerMonitor
     end
 
     #计算平均值
-    def calulateAvg()        
+    def calulateAvg()           
         #消除异常值
         removeDiffV
         #取平均值
@@ -71,25 +85,13 @@ class RangerMonitor
 
     #计算标准差
     def calculateSavg()
-        puts "@rangPipl = #{@rangPipl}"
+        puts "#{@sonarNo}  @rangPipl = #{@rangPipl}"
         calulateAvg
         standardsV = Math.sqrt((@rangPipl.inject(0){ |r,x| r + ((x - @avg )**2 )}) / @rangPipl.length)        
         return standardsV
     end
 
-    #放视频
-    def playVideo(avgRange) 
-        # puts "平均距离#{avgRange}"
-        #平均距离小于targetRang就放片
-        if avgRange <= @targetRang && !@playing
-            playMainVideo
-            @playing = true
-        #观众离开并且正在播放时，就切换到默认片
-        elsif(avgRange > @targetRang && @playing)
-            playSecondVideo
-            @playing = false
-        end
-    end
+    
 
     #计算距离
     def calulateRange(aRange)
@@ -109,16 +111,39 @@ class RangerMonitor
         return -99        
     end
 
+    #放视频
+    def playVideo(avgRange) 
+
+        if(avgRange > @targetRang && @@iGotIt >0) 
+            @@iGotIt = @@iGotIt-1
+        elsif(@@iGotIt < @totalSno)
+            @@iGotIt = @@iGotIt+1                
+        end
+
+        # puts "平均距离#{avgRange}"
+        #平均距离小于targetRang就放片
+        if avgRange <= @targetRang && !@playing
+            playMainVideo
+            @playing = true
+        #观众离开并且正在播放时，就切换到默认片
+        elsif(avgRange > @targetRang && @@iGotIt<=0 && @playing)            
+            playSecondVideo
+            @playing = false
+        end
+    end
+
     #放主视频
     def playMainVideo()
-        xmldoc = REXML::Document.new(File.read("video.xml"))     
+        puts "I got it #{@@iGotIt}"
+        xmldoc = REXML::Document.new(File.read("video.xml"))
         videoPath =  XPath.first(xmldoc, "//main").text
         thr = Thread.new { @adr.play(videoPath) }
         puts "有人接近！ 开始放视频"
     end
 
     #放默认片。
-    def playSecondVideo()
+    def playSecondVideo()        
+        puts "I got it #{@@iGotIt}"
         xmldoc = REXML::Document.new(File.read("video.xml")) 
         videoPath =  XPath.first(xmldoc, "//second").text
         thr = Thread.new { @adr.play(videoPath) }
@@ -126,25 +151,35 @@ class RangerMonitor
     end
 
 
+    def testTh(xx)
+        puts xx
+        while true
+
+            puts xx
+            
+        end
+
+    end
+
+
 end
 
 class SerialPortReader
-
   def readline
     xmldoc = REXML::Document.new(File.read("video.xml")) 
     portName = XPath.first(xmldoc, "//com").text
     sp = SerialPort.open(portName, 9600 , 8,1,SerialPort::NONE) do |sp|
       line =""
-      while true    
-        c = sp.read(1)    
-        line = line + c
-        if c=="\n"
-          #处理
-          yield line
+          while true    
+                c = sp.read(1)    
+                line = line + c
+                if c=="\n"
+                  #处理
+                  yield line
 
-          line = ""
-        end
-      end  
+                  line = ""
+                end
+          end  
     end
   end
 end
@@ -152,9 +187,16 @@ end
 #启动
 if __FILE__ == $0
 
-    xmldoc = REXML::Document.new(File.read("video.xml")) 
+    xmldoc = REXML::Document.new(File.read("video.xml"))
+    com = XPath.first(xmldoc, "//com").text    
+ 
     distance = XPath.first(xmldoc, "//distance").text    
     # 设定 com4口 目标距离150.00厘米    
-    monitor = RangerMonitor.new(4, distance.to_i)
-    monitor.start
+    monitor1 = RangerMonitor.new(com, distance.to_i ,'s1',2)
+    monitor2 = RangerMonitor.new(com, distance.to_i ,'s2',2)
+    puts "star1"
+    th11 = Thread.new { monitor1.start }.join
+    puts "star2"
+    th22 = Thread.new { monitor2.start }.join
+
 end
