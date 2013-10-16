@@ -58,11 +58,8 @@ if __FILE__ == $0
    c1 = C1.new(s1)
    Thread.new {s1.fun}
    sleep 1
-   Thread.new {c1.fun}
+   Thread.new {c1.fun}.join
 
-   while true
-       
-   end
 
 
 

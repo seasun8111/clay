@@ -3,11 +3,9 @@ const int EchoPin=3;
 const int TrigPin2=4;
 const int EchoPin2=5;
 
-float cm;
-float cm2;
 void setup()
 {
-  Serial.begin(9600);
+  Serial1.begin(9600);
 
   pinMode(TrigPin, OUTPUT);
   pinMode(EchoPin, INPUT);
@@ -16,37 +14,42 @@ void setup()
   pinMode(EchoPin2, INPUT);
   
 }
+
+float ping1(){ 
+  return ping(TrigPin,EchoPin);
+}
+
+float ping2(){
+  return ping(TrigPin2,EchoPin2);
+}
+
+float ping( int tx, int rx ){
+  digitalWrite(tx, LOW); //低高低电平发一个短时间脉冲去TrigPin
+  delayMicroseconds(2);
+  digitalWrite(tx, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(tx, LOW);
+  float resp =   pulseIn(rx, HIGH);
+  float cm = resp / 58.0; //将回波时间换算成cm
+  cm = (int(cm * 100.0)) / 100.0; //保留两位小数  
+  return cm;
+}
+
+
 void loop()
 {  
-  digitalWrite(TrigPin, LOW); //低高低电平发一个短时间脉冲去TrigPin
-  delayMicroseconds(2);
-  digitalWrite(TrigPin, HIGH);
-  delayMicroseconds(10);
-  digitalWrite(TrigPin, LOW);
-  float resp =   pulseIn(EchoPin, HIGH);
+//    Serial1.println("s1_aaaaaaaaa");
+  float cm1 =  ping1();
+  Serial1.print("s1_");
+  Serial1.println(cm1);  
   
-//  delayMicroseconds(20);
-//  
-//  digitalWrite(TrigPin2, LOW); //低高低电平发一个短时间脉冲去TrigPin
-//  delayMicroseconds(2);
-//  digitalWrite(TrigPin2, HIGH);
-//  delayMicroseconds(10);
-//  digitalWrite(TrigPin2, LOW);
-//  float resp2 =   pulseIn(EchoPin2, HIGH);
+  delayMicroseconds(100);
   
-  cm = resp / 58.0; //将回波时间换算成cm
-//  cm2 = resp2 / 58.0; //将回波时间换算成cm
-//  cm = (int(cm * 100.0)) / 100.0; //保留两位小数
-  Serial.print("s1_");
-  Serial.println(cm);  
-    delay(45);
-  Serial.print("s2_");
-  Serial.println(cm); 
-    delay(45);
+  float cm2  =   ping2();
+  Serial1.print("s2_");
+  Serial1.println(cm2); 
   
-
-//  Serial.println(cm2);
-//  delay(100);
+  delay(100); 
 }
 
 

@@ -9,11 +9,12 @@ class SerialPortReader
   def readline
     xmldoc = REXML::Document.new(File.read("video.xml")) 
     portName = XPath.first(xmldoc, "//com").text
+    puts "portName  is #{portName}"
     sp = SerialPort.open(portName, 9600 , 8,1,SerialPort::NONE) do |sp|
       line =""
           while true    
                 c = sp.read(1)    
-                line = line + c
+                line = line + c.to_s
                 if c=="\n"
                   #处理
                   yield line
@@ -63,7 +64,8 @@ class ReadDistThread
                 # @threadHash[prefix].synchronize {
                     arr.push(value) 
                     arr.shift if arr.size>@arraySize
-                    # puts "#{prefix} size =  #{arr.size} #{arr} "                    
+                    
+                    puts "#{prefix} size =  #{arr.size} #{arr} "                    
                     if(arr.size>=@arraySize)
                         # puts "#{prefix} #{arr}"
                         @cvHash[prefix].signal
@@ -92,6 +94,7 @@ end
 
 class Monitors
     @@iGotIt = 0
+    @@playing = false
     @rangPipl
     @lock
     @sno
@@ -130,6 +133,7 @@ class Monitors
     #计算距离
     def calulateRange()
         @rangPipl = @readDistThread.distHash[@sno][0,10].clone
+        # puts "@rangPipl #{@rangPipl}"
         #标准差小于1
         if calculateSavg <= 1
             return @avg
@@ -173,7 +177,7 @@ class Monitors
 
     #计算标准差
     def calculateSavg()
-        puts "#{@sno}  @rangPipl = #{@rangPipl}"
+        # puts "#{@sno}  @rangPipl = #{@rangPipl}"
         calulateAvg
 
         standardsV = Math.sqrt((@rangPipl.inject(0){ |r,x| r + ((x - @avg )**2 )}) / @rangPipl.length)        
@@ -189,15 +193,15 @@ class Monitors
             @@iGotIt = @@iGotIt+1                
         end
 
-        # puts "平均距离#{avgRange}"
+        puts "#{@sno}  平均距离#{avgRange}"
         #平均距离小于targetRang就放片
-        if avgRange <= @targetRang && !@playing
+        if avgRange <= @targetRang && !@@playing
             playMainVideo
-            @playing = true
+            @@playing = true
         #观众离开并且正在播放时，就切换到默认片
-        elsif(avgRange > @targetRang && @@iGotIt<=0 && @playing)            
+        elsif(avgRange > @targetRang && @@iGotIt<=0 && @@playing)            
             playSecondVideo
-            @playing = false
+            @@playing = false
         end
     end
 
@@ -244,21 +248,22 @@ if __FILE__ == $0
 
     xmldoc = REXML::Document.new(File.read("video.xml"))
     com = XPath.first(xmldoc, "//com").text    
- 
-
+    puts "Reading #{com} ...."
     distance = XPath.first(xmldoc, "//distance").text    
-
+    puts "Destance is #{distance}."
     rt = ReadDistThread.new(10)        
     Thread.new { rt.readDistinance }
     
 
-    sleep 3 
+    sleep 3
  
     
     mo1 = Monitors.new(rt,'s1',distance.to_f)
     Thread.new {mo1.x1}
     mo2 = Monitors.new(rt,'s2',distance.to_f)
     Thread.new {mo2.x1}.join
+
+
 
     # mo2 = Monitors.new(rt,'s2')
     # Thread.new {mo2.x1}

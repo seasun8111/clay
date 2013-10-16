@@ -11,8 +11,11 @@ include REXML
     sp = SerialPort.open(portName, 9600 , 8,1,SerialPort::NONE) do |sp|
       line =""
       while true    
-        c = sp.read(1)    
-        line = line + c
+        c = sp.read(1) 
+        # puts c
+        
+          line = line + c.to_s
+        
         if c=="\n"
           #处理
           puts line
